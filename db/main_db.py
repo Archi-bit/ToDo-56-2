@@ -1,4 +1,4 @@
-import sqlite3 
+import sqlite3
 from db import queries
 from config import db_path
 
@@ -7,7 +7,7 @@ def init_db():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(queries.CREATE_TASKS)
-    print('База данных подключена!!!')
+
     conn.commit()
     conn.close()
 
@@ -21,14 +21,32 @@ def add_task(task):
     conn.close()
     return task_id
 
-
-def get_task():
+def get_task(order_by=None):
+    """
+    order_by:
+      - "date_desc"  -> новые выше
+      - "date_asc"   -> старые выше
+      - "status_bottom" -> выполненные внизу
+      - "status_top"    -> выполненные вверху
+      - None -> по умолчанию новые выше
+    """
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    cursor.execute(queries.SELECT_TASK)
+
+    base = queries.SELECT_TASK
+    if order_by == "date_asc":
+        base += " ORDER BY datetime(created_at) ASC"
+    elif order_by == "status_bottom":
+        base += " ORDER BY completed ASC, datetime(created_at) DESC"
+    elif order_by == "status_top":
+        base += " ORDER BY completed DESC, datetime(created_at) DESC"
+    else:
+        base += " ORDER BY datetime(created_at) DESC"
+
+    cursor.execute(base)
     tasks = cursor.fetchall()
     conn.close()
-    return tasks 
+    return tasks
 
 
 def delete_task(task_id):
@@ -46,3 +64,10 @@ def update_task(task_id, new_task):
     conn.commit()
     conn.close()
 
+
+def update_completed(task_id, completed_value):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(queries.UPDATE_COMPLETED, (completed_value, task_id))
+    conn.commit()
+    conn.close()
