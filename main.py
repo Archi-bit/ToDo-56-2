@@ -9,6 +9,7 @@ def main(page: ft.Page):
     current_order = "date_desc"
 
     def load_task(order_by=None):
+        nonlocal current_order
         order = order_by if order_by is not None else current_order
         task_list.controls.clear()
         for task_id, task_text, created_at, completed in main_db.get_task(order):
@@ -65,21 +66,28 @@ def main(page: ft.Page):
         task_input.value = ""
         task_input.update()
         load_task()
-        
+
+    def clear_completed(f):
+        main_db.delete_complete_tasks()
+        load_task()
+
 
     task_input = ft.TextField(label="Введите задачу", expand=True, max_length=100)
     add_button = ft.ElevatedButton("ADD", on_click=add_task)
+
 
     sort_new_first = ft.ElevatedButton("📅 Новые выше", on_click=lambda _: load_task("date_desc"))
     sort_old_first = ft.ElevatedButton("📅 Старые выше", on_click=lambda _: load_task("date_asc"))
     sort_done_bottom = ft.ElevatedButton("✅ Выполненные внизу", on_click=lambda _: load_task("status_bottom"))
     sort_done_top = ft.ElevatedButton("✅ Выполненные вверху", on_click=lambda _: load_task("status_top"))
+    clear_button = ft.ElevatedButton("🗑️ Очистить выполненные", on_click=clear_completed)
+
 
     page.add(
         ft.Column(
             [
                 ft.Row([task_input, add_button]),
-                ft.Row([sort_new_first, sort_old_first, sort_done_bottom, sort_done_top]),
+                ft.Row([sort_new_first, sort_old_first, sort_done_bottom, sort_done_top, clear_button]),
                 task_list,
             ]
         )
